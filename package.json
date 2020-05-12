@@ -1,0 +1,25 @@
+{
+  "name": "brush",
+  "version": "1.0.0",
+  "description": "canvas render framework",
+  "main": "brush.js",
+  "author": "Yami",
+  "license": "ISC",
+  "dependencies": {
+    "babel-loader": "^8.1.0",
+    "worker-loader": "^2.0.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.9.6",
+    "@babel/plugin-proposal-class-properties": "^7.8.3",
+    "babel-loader": "^8.1.0",
+    "clean-webpack-plugin": "^3.0.0",
+    "webpack": "^4.0.0",
+    "worker-loader": "^2.0.0"
+  },
+  "babel": {
+    "plugins": [
+      "@babel/plugin-proposal-class-properties"
+    ]
+  }
+}
