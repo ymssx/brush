@@ -223,17 +223,17 @@ brush.render();
 
 ### 组件树
 
-<div align=center><img height="400px" align=center src="./figure/tree.svg"/></div><br/>
+<div align=center><img height="400px" src="./figure/tree.svg"/></div><br/>
 
 父子组件之间是一对多的关系，每个子组件同时拥有自己的子组件，最终形成了一个组件树。同时，每一个组件都自行维护了一个属于自己的offscreenCanvas，只有在有必要更新时，才会自行进行重绘，更新自己的canvas。
 
 也就是说，当一个组件在重绘的时候，自己的每一个子组件都会根据情况判断自己是否需要重绘，如果不需要则直接返回自己的canvas内容，而组件本身只需要拿到这些内容进行绘制。
 
-这样一来，比起将所有的组件都无差别的进行重绘，Brush只需要对某一条路线进行重绘就可以了，时间复杂度从O(n)降低到了O(log(n)),这也就是为什么Brush高效的原因。
-
 <div align=center>
-  <img align=center src="./figure/rendercompare.svg"/>
+  <img width="80%" src="./figure/rendercompare.svg"/>
 </div><br/>
+
+这样一来，比起将所有的组件都无差别的进行重绘，Brush只需要对某一条路线进行重绘就可以了，时间复杂度从O(n)降低到了O(log(n)),这也就是为什么Brush高效的原因。
 
 <br/>
 
