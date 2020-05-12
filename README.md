@@ -223,7 +223,7 @@ brush.render();
 
 ### 组件树
 
-<img height="400px" align=center src="./figure/tree.svg"/>
+<img height="400px" align=center src="./figure/tree.svg"/><br/>
 
 父子组件之间是一对多的关系，每个子组件同时拥有自己的子组件，最终形成了一个组件树。同时，每一个组件都自行维护了一个属于自己的offscreenCanvas，只有在有必要更新时，才会自行进行重绘，更新自己的canvas。
 
