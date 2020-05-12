@@ -232,8 +232,7 @@ brush.render();
 这样一来，比起将所有的组件都无差别的进行重绘，Brush只需要对某一条路线进行重绘就可以了，时间复杂度从O(n)降低到了O(log(n)),这也就是为什么Brush高效的原因。
 
 <div align=center>
-  <img width="40%" align=center src="./figure/renderall.svg"/>
-  <img width="40%" align=center src="./figure/renderfew.svg"/>
+  <img align=center src="./figure/rendercompare.svg"/>
 </div><br/>
 
 <br/>
