@@ -6,7 +6,7 @@ Brush.js是一个绘制canvas的JavaScript框架。
 
 * **高性能** Brush对绘图的细节做了大量优化，将多组件绘图的时间复杂度从O(n)降到了O(log(n))，你可以放心的交给Brush。
 
-* **响应式** 当数据更新时，Brush会自动更新相关的部分组件。在设计好组件的绘图逻辑之后，你只需要关注于数据逻辑部分。
+* **响应式** Brush是数据驱动的，当数据更新时，Brush会自动更新相关的部分组件。在设计好组件的绘图逻辑之后，你只需要关注于数据逻辑部分。
 
 <br/>
 
@@ -93,6 +93,7 @@ class Box extends BrushElement {
   // 绘图的部分放在这里
   paint() {
     this.ctx.fillStyle = this.props.bg;
+    let border = this.props.border;
     /**
      * 以下四个属性的两种获取方法是等同的
      * this.w === this.props.w
@@ -100,10 +101,9 @@ class Box extends BrushElement {
      * this.x === this.props.x
      * this.y === this.props.y
      * 这是个简单的语法糖，简化对常用属性的访问
+     * 另外，brush支持使用百分比进行布局
      */
-    let border = this.props.border;
-    let [w, h] = [this.w - 2 * border, this.h - 2 * border];
-    this.ctx.fillRect(border, border, w, h);
+    this.ctx.rect(border , border, '95%', this.h);
   }
 }
 ```
@@ -186,6 +186,8 @@ class Container extends BrushElement {
   }
 
   paint() {
+    // 我们需要先清除一下画布
+    this.clear();
     this.el.tian({
       y: this.state.i * 10
     })
@@ -207,6 +209,85 @@ brush.render();
 
 ### 组件
 
+组件是Brush中核心的概念，你只需要将目标细化分解成一个个组件，就能轻松的构建复杂的图像。
+
+Brush的每一个组件都维护了一个私有的offscreenCanvas，用于保存自己的视图状态，只有在必要更新时，组件才会进行重绘。
+
+组件允许嵌套其它子组件，你可以在绘制函数`paint`中指定子组件的使用时机，你也可以在组件外部进行指定。
+
+```javascript
+class Demo extends BrushElement {
+  // 指定你需要的组件们
+  elMap = {
+    box: new Box({
+      // ... 初始化参数
+    })
+  };
+
+  constructor(props) {
+    super(props);
+  }
+
+  paint() {
+    //... 绘制逻辑
+    this.el.box({
+      // ... 传递参数
+    })
+  }
+}
+```
+
+注意，`this.el.name`获取的是一个控制器函数，而不是组件实例本身。其功能是传递新的参数并通知更新，在子组件绘制之后，自动采集其canvas内容，函数返回值是组件实例本身。而`this.elMap.name`才能直接获取到组件实例本身。
+
+你可能需要一个现成的组件上进行补充，或者以一个组件为背景快速创建图形，你可以在外部指定子组件。
+
+```javascript
+class Demo extends BrushElement {
+  elMap = {
+    // ...
+    box1: new Box(),
+    box2: new Box()
+  }
+  // ...
+  paint() {
+    this.el.box({
+      // ... 传递参数
+    }).addChild([
+      this.elMap.box1,
+      this.elMap.box2
+    ])
+  }
+}
+```
+
+<br/>
+
+### 绘图扩展
+
+（进行中）Brush对canvas绘制API进行了一系列的补充，其简化了绘制复杂度，扩增了一系列常用的绘图功能，同时你也拥有完全的原生canvas API。
+
+**Brush在绘制时允许你使用百分比、vw、vh等实用的动态参数。**
+
+#### `ctx.rect(x, y, w, h)`
+
+绘制矩形
+
+#### `ctx.circle(x, y, r)`
+
+绘制圆
+
+#### `ctx.plot(X: number[], Y: number[])`
+
+（计划）快速绘制折线图
+
+#### `ctx.smooth(X: number[], Y: number[])`
+
+（计划）通过三次样条插值快速绘制曲线
+
+... 待补充
+
+<br/>
+
 ### 动画
 
 ### 事件
@@ -227,7 +308,7 @@ brush.render();
 
 父子组件之间是一对多的关系，每个子组件同时拥有自己的子组件，最终形成了一个组件树。同时，每一个组件都自行维护了一个属于自己的offscreenCanvas，只有在有必要更新时，才会自行进行重绘，更新自己的canvas。
 
-也就是说，当一个组件在重绘的时候，自己的每一个子组件都会根据情况判断自己是否需要重绘，如果不需要则直接返回自己的canvas内容，而组件本身只需要拿到这些内容进行绘制。
+也就是说，当一个组件在重绘的时候，自己的每一个子组件都会根据情况（比如props是否有变动、变动属性是否被依赖、自身状态是否过期等）判断自己是否需要重绘，如果不需要则直接返回自己的canvas内容，而父级组件本身只需要拿到这些内容进行绘制。
 
 <div align=center>
   <img width="80%" src="./figure/rendercompare.svg"/>
@@ -277,6 +358,6 @@ Brush的更新策略非常值得一说。早期在设计Brush的架构的时候�
 
 3. 在下一个动画帧之前，图层分析所有发起更新请求的子组件，得到从根组件到请求子组件的**更新链**，并且将更新链上所有的组件标记为 **过期**。
 
-4. 由根组件开始向下发起渲染请求，每个组件在绘制时向子组件**索要**最新的canvas内容。如果子组件的状态为未过期，那么直接向父组件交付自己的canvas，不进行重绘；如果子组件已过期，那么就会进行重绘，同时也向自己的子组件索要最新内容，对于每一个子组件都重复上述的内容。这样一来，最终所有的组件都变成了最新状态。
+4. 由根组件开始向下发起渲染请求，每个组件在绘制时向子组件**索要**最新的canvas内容。如果子组件的状态为未过期，且props未发生有效变化，那么直接向父组件交付自己的canvas，不进行重绘；如果子组件已过期，那么就会强制进行重绘，同时也向自己的子组件索要最新内容，对于每一个子组件都重复上述的内容。这样一来，最终所有的组件都变成了最新状态。
 
 一次整体的更新是在一次主任务中执行的，从上至下向子组件索要更新，这能保证每个组件的渲染顺序都是正确的，且最多只被绘制了一次，直接跳过无需更新的组件，所有问题都迎刃而解。

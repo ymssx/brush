@@ -1,5 +1,5 @@
-import { Layer } from './layer.js';
-export { BrushElement } from './element.js';
+import { Layer } from './brushLayer.js';
+export { BrushElement } from './brushElement.js';
 
 export class Brush {
   constructor({ w, h, root, state = {} }) {

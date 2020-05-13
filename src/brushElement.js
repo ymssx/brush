@@ -1,4 +1,4 @@
-import { CanvasContext } from './context.js';
+import { CanvasContext } from './brushCanvasContext.js';
 
 export class BrushElement {
   constructor(props = {}) {
