@@ -292,26 +292,18 @@ class Demo extends BrushElement {
 
 ...
 
-<br/>
-
 ### 事件
 
 Brush中的父子组件通信可以使用props进行。
 ...
 
-<br/>
-
 ### 界面交互
 
 ...
 
-<br/>
-
 ### store
 
 ...
-
-<br/>
 
 ### 状态提升
 
