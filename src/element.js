@@ -1,6 +1,9 @@
+import { CanvasContext } from './context.js';
+
 export class BrushElement {
   constructor(props = {}) {
     const that = this;
+    this.childElements = [];
     this.elMap = {};
 
     // 标识组件是否过期
@@ -8,16 +11,18 @@ export class BrushElement {
 
     this.renderChain = [this];
     this.hasInit = false;
+    // 依赖记录表
     this.isAnsysingDependence = false;
     this.dependence = {};
+    this.stateDependence = {};
     
     /**
      * 基本属性，当未传参时将使用默认值
      * - 优先级最低
      */
     this.baseProps = {
-      w: 10,
-      h: 10,
+      w: 100,
+      h: 100,
       x: 0,
       y: 0
     };
@@ -40,10 +45,14 @@ export class BrushElement {
 
         if (props.hasOwnProperty(key)) {
           res = props[key];
-        } else if (that.defaultProps.hasOwnProperty(key)) {
-          res = that.defaultProps[key];
-        } else if (that.baseProps.hasOwnProperty(key)) {
-          res = that.baseProps[key];
+        } else {
+          if (that.defaultProps.hasOwnProperty(key)) {
+            res = that.defaultProps[key];
+          } else {
+            if (that.baseProps.hasOwnProperty(key)) {
+              res = that.baseProps[key];
+            }
+          }
         }
         
         if (that.isAnsysingDependence) {
@@ -56,10 +65,10 @@ export class BrushElement {
 
         if (key in ['x', 'y']) {
           if (value !== this.props[key]) {
-            that.father.update();
+            that.positionChanged();
           }
         } else if (key in ['w', 'h']) {
-          this.update();
+          that.sizeChanged();
         }
 
         props[key] = value;
@@ -67,17 +76,6 @@ export class BrushElement {
         return true;
       }
     });
-    
-    // init offscreen canvas
-    let [w, h] = [this.props.w, this.props.w];
-    if (OffscreenCanvas) {
-      this.canvas = new OffscreenCanvas(w, h);
-    } else {
-      this.canvas = document.createElement('canvas');
-      this.canvas.width = w;
-      this.canvas.height = h;
-    }
-    this.ctx = this.canvas.getContext('2d');
 
     /**
      * el.name暴露了一个操作elMap.name组件的函数
@@ -86,23 +84,76 @@ export class BrushElement {
      * 3. 获取组件内容
      * 4. 将组件内容绘制在canvas上
      */
+    const elPainterMap = {};
     this.el = new Proxy({}, {
       get(_, key) {
-        let el = that.elMap[key];
-        el.bind(that);
-        return (props) => {
-          if (props === undefined) {
-            props = {};
-          }
+        if (!elPainterMap.hasOwnProperty(key)) {
+          let el = that.elMap[key];
+          el.bindFromElement(that);
+          let elPainter = (props) => {
+            if (props === undefined) {
+              props = {};
+            }
 
-          let canvas = el.renderWithProps(props);          
-          let x = el.props.x;
-          let y = el.props.y;
-    
-          that.ctx.drawImage(canvas, x, y);
-        };
+            let canvas = el.renderWithProps(props);          
+            let x = el.props.x;
+            let y = el.props.y;
+      
+            that.ctx.drawImage(canvas, x, y);
+
+            return el;
+          };
+          elPainterMap[key] = elPainter;
+        }
+
+        return elPainterMap[key];
       }
     })
+
+    /**
+     * 返回整个对象实例的代理
+     * 用于监控属性的获取与设置
+     * 判断是否需要更新
+     */
+    this.data = new Proxy({}, {
+      get(_, key) {
+        if (that.state.hasOwnProperty(key)) {
+          let res = that.state[key];
+          if (that.isAnsysingDependence) {
+            that.stateDependence[key] = res;
+          }
+          return res;
+        } else {
+          if (that.props.hasOwnProperty(key)) {
+            return that.props[key];
+          }
+        }
+      },
+      set(_, key, value) {
+        that.ansysStateChange(key, value);
+        that.state[key] = value;
+      }
+    })
+  }
+
+
+  initOffscreenCanvas() {    
+    let [w, h] = [this.props.w, this.props.w];
+    if (OffscreenCanvas) {
+      this.canvas = new OffscreenCanvas(w, h);
+    } else {
+      this.canvas = document.createElement('canvas');
+      this.canvas.width = w;
+      this.canvas.height = h;
+    }
+    this.originContext = this.canvas.getContext('2d');
+    this.initContext();
+  }
+
+
+  initContext() {
+    let originContext = this.canvas.getContext('2d');
+    this.ctx = new CanvasContext(originContext, this);
   }
 
 
@@ -118,7 +169,7 @@ export class BrushElement {
   }
 
 
-  bind(father) {
+  bindFromElement(father) {
     this.father = father;
     this.layer = father.layer;
 
@@ -128,6 +179,41 @@ export class BrushElement {
     this.defaultCreated();
     this.created();
     this.created = function() {};
+  }
+
+
+  toArray(likeArray) {
+    if (Array.isArray(likeArray)) {
+      return likeArray;
+    }
+    if (likeArray instanceof Object) {
+      if (likeArray.hasOwnProperty(0) || likeArray.hasOwnProperty('0')) {
+        return Array.from(likeArray);
+      }
+    }
+    return [likeArray];
+  }
+
+  
+  addChild(childElements) {
+    let els = this.toArray(childElements);
+
+    this.childElements = els.map(el => {
+      return (props) => {
+        el.bindFromElement(this);
+        if (props === undefined) {
+          props = {};
+        }
+
+        let canvas = el.renderWithProps(props);          
+        let x = el.props.x;
+        let y = el.props.y;
+  
+        that.ctx.drawImage(canvas, x, y);
+
+        return el;
+      }
+    })
   }
 
 
@@ -207,6 +293,11 @@ export class BrushElement {
   }
 
 
+  ansysStateChange(key, value) {
+
+  }
+
+
   setState(state) {
     if (!this.state) this.state = {};
 
@@ -233,12 +324,14 @@ export class BrushElement {
 
 
   defaultCreated() {
+    this.initOffscreenCanvas();
   }
 
 
   defaultBeforePaint() {
     this.isAnsysingDependence = true;
     this.dependence = {};
+    this.stateDependence = {};
   }
 
 

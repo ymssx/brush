@@ -20,3 +20,5 @@ test.*
 index.*
 main.js
 webpack*
+
+*.vsdx

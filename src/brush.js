@@ -29,9 +29,21 @@ export class Brush {
 
 
   createLayer({ style, el }) {
-    const layer = new Layer({ style, el }, this);
+    const layer = new Layer({ style, el }, this, this.layers.length);
     this.layers.push(layer);
     return layer;
+  }
+
+
+  checkLayerVisibility(index) {
+    for (let i = this.layers.length - 1; i >= 0; i--) {
+      if (i <= index) return true;
+      let layer = this.layers[i];
+      if (!layer.isCanvasHasAlpha()) {
+        return false;
+      }
+    }
+    return true;
   }
 
 

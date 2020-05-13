@@ -82,7 +82,7 @@ Brush组件和React组件长得非常相似，本框架吸收了许多React的�
 ```javascript
 class Box extends BrushElement {
   constructor(props) {
-    super(props):
+    super(props);
     // 组件的默认属性
     this.defaultProps = {
       w: 50,
@@ -178,7 +178,7 @@ class Container extends BrushElement {
   // 生命周期钩子，在组件被初始化后执行函数
   created() {
     // 每隔一秒将i自增
-    setTimeInterval(() => {
+    setInterval(() => {
       this.setState({
         i: this.state.i + 1
       })
