@@ -55,6 +55,9 @@ export class Layer {
     if (this.style.backgroundColor) {
       this.canvas.style.background = this.style.backgroundColor;
     }
+
+    this.registEvent();
+
     this.brush.root.appendChild(this.canvas);
  
     this.ctx = this.canvas.getContext((USE_WORK ? 'bitmaprenderer' : '2d'), {
@@ -182,7 +185,7 @@ export class Layer {
     }
     this.updater = window.requestAnimationFrame(() => {
       this.signRenderChain();
-      let res = this.render();
+      this.render();
       this.defaultAfterRender();
     })
   }
@@ -217,5 +220,52 @@ export class Layer {
       }
     }
     return [likeArray];
+  }
+
+
+  eventDispatch(eventName, x, y) {
+    let els = this.toArray(this.el);
+    for (let i = els.length - 1; i >= 0; i--) {
+      let el = els[i];
+      let isElIncludePoint = el.eventDispatch(eventName, x, y);
+      if (isElIncludePoint) return;
+    }
+  }
+
+
+  getMousePosition(e) {
+    let x, y;
+    if (e.pageX || e.pageY) {
+      x = e.pageX;
+      y = e.pageY;
+    } else {
+      x = e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
+      y = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
+    }
+
+    x -= this.canvas.offsetLeft;
+    y -= this.canvas.offsetTop;
+    x |= 0;
+    y |= 0;
+
+    return [x, y];
+  }
+
+
+  registEvent() {    
+    this.canvas.addEventListener('click', (e) => {
+      let [x, y] = this.getMousePosition(e);
+      this.eventDispatch('click', x, y);
+    }, false);
+    
+    this.canvas.addEventListener('mousemove', (e) => {
+      let [x, y] = this.getMousePosition(e);
+      this.eventDispatch('over', x, y);
+    }, false);
+  }
+
+
+  changeCursor(cursor) {
+    this.canvas.style.cursor = cursor;
   }
 }

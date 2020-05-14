@@ -4,6 +4,9 @@ export class BrushElement {
   constructor(props = {}) {
     const that = this;
     this.childElements = [];
+    this.allChildElements = [];
+    this.tempChildStack = [];
+    this.tempChildSet = new Set();
     this.elMap = {};
 
     // 标识组件是否过期
@@ -13,8 +16,12 @@ export class BrushElement {
     this.hasInit = false;
     // 依赖记录表
     this.isAnsysingDependence = false;
+    this.isCollectingChilds = false;
     this.dependence = {};
     this.stateDependence = {};
+
+    // 事件记录表
+    this.eventsMap = {};
     
     /**
      * 基本属性，当未传参时将使用默认值
@@ -104,6 +111,11 @@ export class BrushElement {
             return el;
           };
           elPainterMap[key] = elPainter;
+        }
+
+        if (that.isCollectingChilds) {
+          let el = that.elMap[key];
+          that.tempChildStack.push(el);
         }
 
         return elPainterMap[key];
@@ -275,7 +287,7 @@ export class BrushElement {
      * 如果所有子组件都未过期 且 新参数不值得更新
      * 那么就不更新，直接使用当前的canvas
      */
-    if (!this.isChildsOverdue() && !this.isWorthToUpdate(props)) {
+    if (this.isNew && !this.isChildsOverdue() && !this.isWorthToUpdate(props)) {
       return this.canvas;
     } else {
       return this.render();
@@ -330,6 +342,10 @@ export class BrushElement {
 
   defaultBeforePaint() {
     this.isAnsysingDependence = true;
+    this.isCollectingChilds = true;
+    this.allChildElements = this.toArray(this.childElements).slice();
+    this.tempChildStack = [];
+    this.tempChildSet = new Set();
     this.dependence = {};
     this.stateDependence = {};
   }
@@ -340,9 +356,26 @@ export class BrushElement {
       this.hasInit = true;
       this.updated();
     }
+    this.processChildsElement();
     this.isAnsysingDependence = false;
     // 绘制完毕之后将自己标识为最新
     this.isNew = true;
+  }
+
+
+  processChildsElement() {
+    if (!this.isCollectingChilds) return;
+
+    while(this.tempChildStack.length > 0) {
+      let el = this.tempChildStack.pop();
+      if (!this.tempChildSet.has(el)) {
+        this.tempChildSet.add(el);
+        this.allChildElements.unshift(el);
+      }
+    }
+    this.tempChildStack = [];
+    this.tempChildSet = new Set();
+    this.isCollectingChilds = false;
   }
 
 
@@ -361,6 +394,73 @@ export class BrushElement {
     this.canvas.w = this.w;
     this.canvas.h = this.h;
     this.update();
+  }
+
+
+  eventDispatchControl(eventName, x, y, el) {
+    let isXInEl = el.x <= x && x <= (el.x + el.w);
+    let isYInEl = el.y <= y && y <= (el.y + el.h);
+    if (isXInEl && isYInEl) {
+      el.eventDispatch(eventName, x - el.x, y - el.y);
+    }
+  }
+
+
+  eventDispatch(eventName, x, y) {
+    for (let i = this.allChildElements.length - 1; i >= 0; i--) {
+      let el = this.allChildElements[i];
+      let isLastChildIncludePoint = this.eventDispatchControl(eventName, x, y, el);
+      if (isLastChildIncludePoint) return;
+    }
+
+    if (this.ctx.isPointInPath(x, y)) {
+      this.trigerEventFromSelf(eventName);
+      return true;
+    }
+    return false;
+  }
+
+
+  trigerEvent(eventName) {    
+    if (this.eventsMap.hasOwnProperty(eventName)) {
+      let eventList = this.eventsMap[eventName];
+      eventList.forEach(callback => {
+        callback();
+      })
+    }
+  }
+
+
+  trigerEventFromSelf(eventName) {
+    this.trigerEvent(eventName);
+    this.eventBubbling(eventName);
+  }
+
+
+  trigerEventFromBubbling(eventName, originElement) {
+    this.trigerEvent(eventName);
+    this.eventBubbling(eventName);
+  }
+
+
+  eventBubbling(eventName) {
+    if (this.father instanceof BrushElement) {
+      this.father.trigerEventFromBubbling(eventName, this);
+    }
+  }
+
+
+  addEvent(eventName, callback) {
+    if (!this.eventsMap.hasOwnProperty(eventName)) {
+      this.eventsMap[eventName] = [];
+    }
+
+    this.eventsMap[eventName].push(callback);
+  }
+
+
+  changeCursor(cursor) {
+    this.layer.changeCursor(cursor);
   }
 
 

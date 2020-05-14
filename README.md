@@ -299,7 +299,32 @@ Brush中的父子组件通信可以使用props进行。
 
 ### 界面交互
 
-...
+Brush允许你轻松的创建界面交互效果，你只需要在组件中设置鼠标事件回调函数即可。
+
+```javascript
+class Demo extends BrushElement {
+  constructor(props) {
+    super(props);
+    this.state = { i: 1 };
+  }
+
+  created() {
+    this.addEvent('click', () => {
+      this.setState({
+        i: this.state.i + 1
+      })
+    })
+  }
+}
+```
+
+同时，你也可以随时更改鼠标样式
+```javascript
+
+this.changeCursor('pointer');
+```
+
+Brush组件中的事件同样存在事件冒泡，在捕获到最终的目标组件之后，事件会反向向父级传播，直到传播到根级组件。
 
 ### store
 
