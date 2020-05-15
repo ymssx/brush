@@ -318,6 +318,8 @@ class Demo extends BrushElement {
 }
 ```
 
+支持的鼠标事件有 `click | over | in | out`
+
 同时，你也可以随时更改鼠标样式
 ```javascript
 

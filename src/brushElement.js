@@ -456,6 +456,17 @@ export class BrushElement {
     }
 
     this.eventsMap[eventName].push(callback);
+    if (eventName === 'in') {
+      this.addEvent('over', () => {
+        this.layer.reportInEvent(this);
+      })
+    } else if (eventName === 'out') {
+      this.addEvent('over', () => {
+        this.layer.reportOutEvent(this);
+      })
+    }
+
+    this.layer.registEventFromElement(eventName);
   }
 
 

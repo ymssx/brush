@@ -8,6 +8,10 @@ export class Layer {
     this.brush = brush;
     this.index = index;
 
+    this.eventSet = new Set();
+    this.mouseInSet = new Set();  
+    this.mouseOutSet = new Set();    
+
     this.updateMap = new Set();
 
     this.createCanvas();
@@ -252,16 +256,77 @@ export class Layer {
   }
 
 
-  registEvent() {    
+  reportInEvent(el) {
+    this.mouseInSet.add(el);
+  }
+
+
+  reportOutEvent(el) {
+    this.mouseOutSet.add(el);
+  }
+
+
+  ansysMouseoverEventSet() {
+    /**
+     * 每次mouseover事件都收集所有触发over事件的子组件为一个set
+     * 并且保存上次的set
+     * 新旧set对比，找出离开set的和新进入set的
+     */
+    for (let el of this.mouseInSet.values()) {
+      if (!this.mouseInSetOld.has(el)) {
+        el.trigerEventFromSelf('in');
+      }
+    }
+
+    for (let el of this.mouseOutSetOld.values()) {
+      if (!this.mouseOutSet.has(el)) {
+        el.trigerEventFromSelf('out');
+      }
+    }
+  }
+
+
+  registEvent() {
+    if (this.eventSet.has('click')) {
+      this.registClickEvent();
+    }
+    if (this.eventSet.has('over')) {
+      this.registOverEvent();
+    }
+  }
+
+
+  registClickEvent() {
     this.canvas.addEventListener('click', (e) => {
       let [x, y] = this.getMousePosition(e);
       this.eventDispatch('click', x, y);
     }, false);
-    
+  }
+
+
+  registOverEvent() {
     this.canvas.addEventListener('mousemove', (e) => {
+      this.mouseInSetOld = this.mouseInSet;
+      this.mouseOutSetOld = this.mouseOutSet;
+      this.mouseInSet = new Set();
+      this.mouseOutSet = new Set();
+
       let [x, y] = this.getMousePosition(e);
       this.eventDispatch('over', x, y);
+      this.ansysMouseoverEventSet();
     }, false);
+  }
+
+
+  registEventFromElement(eventName) {
+    if (!this.eventSet.has(eventName)) {
+      this.eventSet.add(eventName);
+      if (eventName === 'click') {
+        this.registClickEvent();
+      } else if (eventName === 'over') {
+        this.registOverEvent();
+      }
+    }
   }
 
 
