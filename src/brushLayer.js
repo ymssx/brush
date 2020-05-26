@@ -12,7 +12,9 @@ export class Layer {
     this.mouseInSet = new Set();  
     this.mouseOutSet = new Set();    
 
-    this.updateMap = new Set();
+    this.updateSet = new Set();
+    this.beforeUpdateCallbackSet = new Set();
+    this.afterUpdateCallbackSet = new Set();
 
     this.createCanvas();
 
@@ -178,8 +180,29 @@ export class Layer {
   receiveUpdate(el) {
     if (!this.layerVisibility) return;
 
-    this.updateMap.add(el);
+    this.updateSet.add(el);
     this.handleUpdate();
+  }
+
+
+  receiveBeforeUpdateCallback(callback) {
+    if (callback instanceof Function) {
+      this.beforeUpdateCallbackSet.add(callback);
+    }
+  }
+
+
+  receiveAfterUpdateCallback(callback) {
+    if (callback instanceof Function) {
+      this.afterUpdateCallbackSet.add(callback);
+    }
+  }
+
+
+  receiveNextFrameCallback(callback) {
+    if (callback instanceof Function) {
+      this.nextFrameCallbackSet.add(callback);
+    }
   }
 
 
@@ -189,18 +212,27 @@ export class Layer {
     }
     this.updater = window.requestAnimationFrame(() => {
       this.signRenderChain();
+      this.defaultBeforeRender();
       this.render();
       this.defaultAfterRender();
     })
   }
 
 
+  quickUpdate() {
+    this.signRenderChain();
+    this.defaultBeforeRender();
+    this.render();
+    this.defaultAfterRender();
+  }
+
+
   signRenderChain() {
     /**
-     * updateMap记录了所有请求更新的renderChain
+     * updateSet记录了所有请求更新的renderChain
      * 将收集的renderChain的所有元素都标记为过期
      */
-    for (let leafEl of this.updateMap.values()) {
+    for (let leafEl of this.updateSet.values()) {
       let chain = leafEl.renderChain;
       for (let el of chain) {
         el.isNew = false;
@@ -209,8 +241,26 @@ export class Layer {
   }
 
 
+  defaultBeforeRender() {
+    let callbacks = Array.from(this.beforeUpdateCallbackSet.values());
+    for (let callback of callbacks) {
+      if (callback instanceof Function) {
+        callback();
+      }
+    }
+  }
+
+
   defaultAfterRender() {
-    this.updateMap = new Set();
+    this.updateSet.clear();
+    let callbacks = Array.from(this.afterUpdateCallbackSet.values());
+    this.beforeUpdateCallbackSet.clear();
+    this.afterUpdateCallbackSet.clear();
+    for (let callback of callbacks) {
+      if (callback instanceof Function) {
+        callback();
+      }
+    }
   }
 
 

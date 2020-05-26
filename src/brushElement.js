@@ -318,8 +318,92 @@ export class BrushElement {
   }
 
 
+  smoothState(state, delay) {
+    if (!this.state) this.state = {};
+
+    let changeList = [];
+    const walkObj = (obj, keyList) => {
+      for (let key in obj) {
+        let copyKeyList = keyList.slice();
+        copyKeyList.push(key);
+        let type = typeof obj[key];
+        if (type === 'object') {
+          walkObj(obj[key], copyKeyList);
+        } else if (type === 'number') {
+          let target = obj[key];
+          let origin = this.findValueByKeys(copyKeyList);
+          if (target != origin) {
+            changeList.push({
+              target,
+              origin,
+              diff: target - origin,
+              keyList: copyKeyList
+            });
+          }
+        }
+      }
+    };
+    walkObj(state, []);
+
+    let startTime = new Date().getTime();
+    const animationLoop = () => {
+      let isFinished = false;
+      let now = new Date().getTime();
+      let timePercent = Math.min(1, (now - startTime) / delay);
+      for (let item of changeList) {
+        if (item.target !== this.findValueByKeys(item.keyList)) {
+          let currentTarget = item.origin + item.diff * timePercent;
+          state = this.changeValueByKeys(state, item.keyList, currentTarget);
+        } else {
+          isFinished = true;
+        }
+      }
+      if (!this.state) this.state = {};      
+      this.state = Object.assign(this.state, state);
+      
+      if (!isFinished) {
+        this.afterUpdate(animationLoop.bind(this));
+      }
+      this.update();
+    };
+    animationLoop();
+  }
+
+
+  findValueByKeys(keys) {
+    let res = this.state;
+    for (let key of keys) {
+      res = res[key];
+    }
+    return res;
+  }
+
+
+  changeValueByKeys(target, keys, value) {
+    let res = target;
+    for (let key of keys) {
+      if (typeof res[key] === 'object') {
+        res = res[key];
+      } else {
+        res[key] = value;
+      }
+    }
+    return target;
+  }
+
+
   update() {
     this.layer.receiveUpdate(this);
+  }
+
+
+  beforeUpdate(callback) {
+    this.layer.receiveBeforeUpdateCallback(callback);
+  }
+
+
+  afterUpdate(callback) {
+    this.layer.receiveAfterUpdateCallback(callback);
   }
 
 
@@ -345,7 +429,7 @@ export class BrushElement {
     this.isCollectingChilds = true;
     this.allChildElements = this.toArray(this.childElements).slice();
     this.tempChildStack = [];
-    this.tempChildSet = new Set();
+    this.tempChildSet.clear();
     this.dependence = {};
     this.stateDependence = {};
   }
@@ -374,7 +458,7 @@ export class BrushElement {
       }
     }
     this.tempChildStack = [];
-    this.tempChildSet = new Set();
+    this.tempChildSet.clear();
     this.isCollectingChilds = false;
   }
 

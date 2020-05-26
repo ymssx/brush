@@ -290,7 +290,56 @@ class Demo extends BrushElement {
 
 ### 动画
 
-...
+Brush的动画是数据驱动的，你只需要指定你的目标state和过渡时间(ms)，我们会自动平滑地绘制过渡动画（仅支持数值）。
+
+```javascript
+BrushElement.smoothState(targetState, delay);
+```
+
+* **targetState** 需要渐变的目标值，会自动渐近地改变state中对应的数值部分。
+
+* **delay** 动画过渡时间。
+
+让我们升级一下上述的容器，让它的移动更平滑！
+
+```javascript
+class Container extends BrushElement {
+  constructor(props) {
+    super(props);
+    // 设置内部状态
+    this.state = {
+      i: 0
+    }
+  }
+
+  elMap = {
+    tian: new Tian({
+      x: 0,
+      y: 0
+    })
+  };
+
+  created() {
+    // 每隔一秒将i自增
+    let i = 1;
+    setInterval(() => {
+      // 300ms的过渡动画
+      this.smoothState({
+        i: i++
+      }, 300);
+    }, 1000)
+  }
+
+  paint() {
+    this.clear();
+    this.el.tian({
+      y: this.state.i * 10
+    })
+  }
+}
+```
+
+<br/>
 
 ### 事件
 
