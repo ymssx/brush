@@ -366,7 +366,7 @@ export class BrushElement {
       }
       this.update();
     };
-    animationLoop();
+    if (changeList.length > 0) animationLoop();
   }
 
 
