@@ -101,13 +101,13 @@ export class BrushElement {
             if (props === undefined) {
               props = {};
             }
-
-            let canvas = el.renderWithProps(props);          
+          
             let x = el.props.x;
             let y = el.props.y;
-      
-            that.ctx.drawImage(canvas, x, y);
-
+            if (x < that.props.w && y < that.props.h) {
+              let canvas = el.renderWithProps(props);
+              that.ctx.drawImage(canvas, x, y);
+            }
             return el;
           };
           elPainterMap[key] = elPainter;
@@ -191,6 +191,11 @@ export class BrushElement {
     this.defaultCreated();
     this.created();
     this.created = function() {};
+  }
+
+
+  get isInFatherCanvas() {
+    return this.x < this.father.w && this.y < this.father.h;
   }
 
 
@@ -393,6 +398,8 @@ export class BrushElement {
 
 
   update() {
+    if (!this.isInFatherCanvas) return;
+
     this.layer.receiveUpdate(this);
   }
 
@@ -452,6 +459,7 @@ export class BrushElement {
 
     while(this.tempChildStack.length > 0) {
       let el = this.tempChildStack.pop();
+      if (!el.isInFatherCanvas) return;
       if (!this.tempChildSet.has(el)) {
         this.tempChildSet.add(el);
         this.allChildElements.unshift(el);

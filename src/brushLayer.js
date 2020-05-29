@@ -179,6 +179,7 @@ export class Layer {
 
   receiveUpdate(el) {
     if (!this.layerVisibility) return;
+    if (!el.isInFatherCanvas) return;
 
     this.updateSet.add(el);
     this.handleUpdate();
@@ -382,5 +383,25 @@ export class Layer {
 
   changeCursor(cursor) {
     this.canvas.style.cursor = cursor;
+  }
+
+
+  get x() {
+    return this.style.x;
+  }
+
+
+  get y() {
+    return this.style.y;
+  }
+
+
+  get w() {
+    return this.style.w;
+  }
+
+  
+  get h() {
+    return this.style.h;
   }
 }
