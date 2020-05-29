@@ -102,11 +102,9 @@ export class BrushElement {
               props = {};
             }
           
-            let x = el.props.x;
-            let y = el.props.y;
-            if (x < that.props.w && y < that.props.h) {
+            if (el.isInFatherCanvas) {
               let canvas = el.renderWithProps(props);
-              that.ctx.drawImage(canvas, x, y);
+              that.ctx.drawImage(canvas, el.x, el.y);
             }
             return el;
           };
