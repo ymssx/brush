@@ -1,18 +1,18 @@
 # Brush.js
 
-Brush.js是一个绘制canvas的JavaScript框架。
+Brush.js is a JavaScript framework for drawing canvas.
 
-* **组件化** 和React非常相似，你可以创建拥有各自状态的组件，每个组件只需要专注于自身的绘图逻辑，再由这些组件构成更加复杂的 UI。
+* **componentization** Brush is very similar to React. You can create components with their own states. Each component only needs to focus on its own drawing logic, and then these components constitute a more complex UI.
 
-* **高性能** Brush对绘图的细节做了大量优化，将多组件绘图的时间复杂度从O(n)降到了O(log(n))，你可以放心的交给Brush。
+* **high performance** Brush has made a lot of optimizations on the details of drawing, reducing the time complexity of multi-component drawing from O(n) to O(log(n)). You can trust to give it to brush.
 
-* **响应式** Brush是数据驱动的，当数据更新时，Brush会自动更新相关的部分组件。在设计好组件的绘图逻辑之后，你只需要关注于数据逻辑部分。
+* **responsive** Brush is data-driven. When data is updated, brush will automatically update some related components. After designing the component's drawing logic, you only need to focus on the data logic part.
 
 <br/>
 
-## 📦 安装
+## 📦 Install
 
-### 使用 `<script>` 引用
+### Use `<script>`
 
 ```html
 <div id="root"></div>
@@ -22,9 +22,9 @@ Brush.js是一个绘制canvas的JavaScript框架。
 
 <br/>
 
-## 🧲 使用
+## 🧲 Usage
 
-我们以制作一个俄罗斯方块游戏为例。首先你需要创建一个Brush实例，并且传入尺寸 w 和 h 以及绑定的元素root。
+Let's take making a Tetris game as an example. First you need to create a Brush instance and pass in the dimensions W and H and the binding element root.
 
 ```javascript
 const brush = new Brush({
@@ -133,26 +133,24 @@ class Tian extends BrushElement {
 
   paint() {
     // 注意是el不是elMap
-    // 可以对子组件传参
-    // 在之后可以使用rotate、scale等方法进行后处理
-    // 最后一定要调用done方法表示结束
+    // 在这里可以对子组件传参
     this.el.box({
       x: 0,
       y: 0
-    }).done();
+    })
 
     this.el.box({
       x: 50
-    }).done();
+    })
 
     this.el.box({
       x: 0,
       y: 50
-    }).done();
+    })
 
     this.el.box({
       x: 50
-    }).done();
+    })
   }
 }
 ```
@@ -192,7 +190,7 @@ class Container extends BrushElement {
     this.clear();
     this.el.tian({
       y: this.state.i * 10
-    }).done();
+    })
   }
 }
 ```
@@ -232,22 +230,14 @@ class Demo extends BrushElement {
 
   paint() {
     //... 绘制逻辑
-    this.el.box.paint({
+    this.el.box({
       // ... 传递参数
-    }).done();
+    })
   }
 }
 ```
 
-注意，`this.el.name`获取的是一个控制器函数，而不是组件实例本身。其功能是传递新的参数并通知更新，在子组件绘制之后，链式调用`done`方法采集其canvas内容。而`this.elMap.name`才能直接获取到组件实例本身。
-
-在paint之后你可以使用rotate、scale、translate、transform、opacity等方法对子组件进行后处理：
-
-```javascript
-this.el.box.paint({
-    // ...
-}).rotate(45).translate(100, 100).scale(1.2, 0.8).done();
-```
+注意，`this.el.name`获取的是一个控制器函数，而不是组件实例本身。其功能是传递新的参数并通知更新，在子组件绘制之后，自动采集其canvas内容，函数返回值是组件实例本身。而`this.elMap.name`才能直接获取到组件实例本身。
 
 你可能需要一个现成的组件上进行补充，或者以一个组件为背景快速创建图形，你可以在外部指定子组件。
 
@@ -265,7 +255,7 @@ class Demo extends BrushElement {
     }).addChild([
       this.elMap.box1,
       this.elMap.box2
-    ]).done();
+    ])
   }
 }
 ```
@@ -347,29 +337,6 @@ class Container extends BrushElement {
     })
   }
 }
-```
-
-也许你需要数据**永不停息**地增长，你可以使用`infiniteState`方法，传入一个增长速度，我们会按照这个速度进行平滑的增加。
-
-```javascript
-BrushElement.infiniteState(stepState);
-```
-
-函数返回一个控制器，你可以使用stop、start进行暂停和启动。
-
-例如：
-
-```javascript
-let control = this.infiniteState({
-  i: 10, // 每秒平滑地增加10
-  j: {
-    k: 1 // 每秒平滑地增加1
-  }
-});
-
-setTimeout(() => {
-  control.stop();
-}, 5000)
 ```
 
 <br/>

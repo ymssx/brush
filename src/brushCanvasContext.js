@@ -91,10 +91,13 @@ export class CanvasContext {
       border = this.transReferW(border);
       this.oct.strokeStyle = color;
       this.oct.lineWidth = border;
+    } else {
+      this.oct.strokeStyle = backgroundColor;
     }
     if (backgroundColor) {
       this.oct.fillStyle = backgroundColor;
     }
+    
     this.oct.stroke();
     this.oct.fill();
     this.oct.restore();

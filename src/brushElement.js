@@ -1,4 +1,5 @@
 import { CanvasContext } from './brushCanvasContext.js';
+import { BrushProxy } from './brushProxy.js';
 
 export class BrushElement {
   constructor(props = {}) {
@@ -97,18 +98,8 @@ export class BrushElement {
         if (!elPainterMap.hasOwnProperty(key)) {
           let el = that.elMap[key];
           el.bindFromElement(that);
-          let elPainter = (props) => {
-            if (props === undefined) {
-              props = {};
-            }
-          
-            if (el.isInFatherCanvas) {
-              let canvas = el.renderWithProps(props);
-              that.ctx.drawImage(canvas, el.x, el.y);
-            }
-            return el;
-          };
-          elPainterMap[key] = elPainter;
+          let bp = new BrushProxy(el);
+          elPainterMap[key] = bp.paint.bind(bp);
         }
 
         if (that.isCollectingChilds) {
@@ -305,6 +296,7 @@ export class BrushElement {
 
   clear() {
     this.canvas.width = this.canvas.width;
+    this.paintCanvasBackground();
   }
 
 
@@ -321,9 +313,7 @@ export class BrushElement {
   }
 
 
-  smoothState(state, delay) {
-    if (!this.state) this.state = {};
-
+  __getStateChangeList(state) {
     let changeList = [];
     const walkObj = (obj, keyList) => {
       for (let key in obj) {
@@ -347,7 +337,14 @@ export class BrushElement {
       }
     };
     walkObj(state, []);
+    return changeList;
+  }
 
+
+  smoothState(state, delay) {
+    if (!this.state) this.state = {};
+
+    let changeList = this.__getStateChangeList(state);
     let startTime = new Date().getTime();
     const animationLoop = () => {
       let isFinished = false;
@@ -370,6 +367,49 @@ export class BrushElement {
       this.update();
     };
     if (changeList.length > 0) animationLoop();
+  }
+
+
+  infiniteState(state) {
+    let switcher = true;
+    let changeList = this.__getStateChangeList(state);
+    let startTime = new Date().getTime();
+    let pauseTime;
+    const animationLoop = () => {
+      let now = new Date().getTime();
+      let timeProgress = now - startTime;
+      for (let item of changeList) {
+        let speed = item.target / 1000;
+        let currentTarget = item.origin + speed * timeProgress;
+        state = this.changeValueByKeys(state, item.keyList, currentTarget);
+      }
+      if (!this.state) this.state = {};      
+      this.state = Object.assign(this.state, state);
+      
+      if (switcher) {
+        this.afterUpdate(animationLoop.bind(this));
+      }
+      this.update();
+    };
+    if (changeList.length > 0) animationLoop();
+    return {
+      stop() {
+        switcher = false;
+        pauseTime = new Date().getTime();
+      },
+      start() {
+        let now = new Date().getTime();
+        startTime += now - pauseTime;
+        switcher = true;
+        if (changeList.length > 0) animationLoop();
+      },
+      del() {
+        switcher = null;
+        changeList = null;
+        startTime = null;
+        pauseTime = null;
+      }
+    }
   }
 
 
@@ -415,12 +455,24 @@ export class BrushElement {
   render() {
     this.defaultBeforePaint();
     this.beforePaint();
+
+    this.paintCanvasBackground();
     this.paint();
 
     this.afterPaint();
     this.defaultAfterPaint();
 
     return this.canvas;
+  }
+
+
+  paintCanvasBackground() {
+    if (this.bg) {
+      this.ctx.save();
+      this.ctx.fillStyle = this.bg;
+      this.ctx.fillRect(0, 0, this.w, this.h);
+      this.ctx.restore();
+    }
   }
 
 
