@@ -344,29 +344,33 @@ export class BrushElement {
   smoothState(state, delay) {
     if (!this.state) this.state = {};
 
-    let changeList = this.__getStateChangeList(state);
-    let startTime = new Date().getTime();
-    const animationLoop = () => {
-      let isFinished = false;
-      let now = new Date().getTime();
-      let timePercent = Math.min(1, (now - startTime) / delay);
-      for (let item of changeList) {
-        if (item.target !== this.findValueByKeys(item.keyList)) {
-          let currentTarget = item.origin + item.diff * timePercent;
-          state = this.changeValueByKeys(state, item.keyList, currentTarget);
-        } else {
-          isFinished = true;
+    return new Promise(resolve => {
+      let changeList = this.__getStateChangeList(state);
+      let startTime = new Date().getTime();
+      const animationLoop = () => {
+        let isFinished = false;
+        let now = new Date().getTime();
+        let timePercent = Math.min(1, (now - startTime) / delay);
+        for (let item of changeList) {
+          if (item.target !== this.findValueByKeys(item.keyList)) {
+            let currentTarget = item.origin + item.diff * timePercent;
+            state = this.changeValueByKeys(state, item.keyList, currentTarget);
+          } else {
+            isFinished = true;
+          }
         }
-      }
-      if (!this.state) this.state = {};      
-      this.state = Object.assign(this.state, state);
-      
-      if (!isFinished) {
-        this.afterUpdate(animationLoop.bind(this));
-      }
-      this.update();
-    };
-    if (changeList.length > 0) animationLoop();
+        if (!this.state) this.state = {};      
+        this.state = Object.assign(this.state, state);
+        
+        if (!isFinished) {
+          this.afterUpdate(animationLoop.bind(this));
+        } else {
+          resolve();
+        }
+        this.update();
+      };
+      if (changeList.length > 0) animationLoop();
+    })
   }
 
 
@@ -452,6 +456,12 @@ export class BrushElement {
   }
 
 
+  nextFrame(callback) {
+    this.afterUpdate(callback);
+    this.update();
+  }
+
+
   render() {
     this.defaultBeforePaint();
     this.beforePaint();
@@ -518,12 +528,6 @@ export class BrushElement {
     this.tempChildStack = [];
     this.tempChildSet.clear();
     this.isCollectingChilds = false;
-  }
-
-
-  reqFrame(callback) {
-    callback();
-    this.father.update();
   }
 
 

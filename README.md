@@ -310,6 +310,8 @@ BrushElement.smoothState(targetState, delay);
 
 * **delay** 动画过渡时间。
 
+smoothState的返回值是一个Promise对象，你可以在之后链式调用其它动画。
+
 让我们升级一下上述的容器，让它的移动更平滑！
 
 ```javascript
@@ -370,6 +372,17 @@ let control = this.infiniteState({
 setTimeout(() => {
   control.stop();
 }, 5000)
+```
+
+当然了，你可以自定义你自己的动画，在通常我们使用requestAnimationFrame来请求动画帧，在Brush中，请使用nextFrame方法。
+
+```javascript
+let animation = () => {
+  this.state.i++;
+  // 如果你希望递归调用动画，请在末尾加上nextFrame
+  this.nextFrame(animation);
+}
+this.nextFrame(animation);
 ```
 
 <br/>
