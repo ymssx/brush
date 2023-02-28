@@ -1,5 +1,10 @@
 # Brush.js
 
+This repo is deprecated, please move to [https://github.com/ymssx/muser](https://github.com/ymssx/muser)
+
+
+----------------------------------------------------------------------
+
 Brush.js是一个绘制canvas的JavaScript框架。
 
 * **组件化** 和React非常相似，你可以创建拥有各自状态的组件，每个组件只需要专注于自身的绘图逻辑，再由这些组件构成更加复杂的 UI。
